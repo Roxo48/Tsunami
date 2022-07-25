@@ -1,0 +1,5 @@
+name: Tsunami
+version: '${project.version}'
+main: me.roxo.tsunami.Tsunami
+api-version: 1.17
+authors: [ Roxo ]
