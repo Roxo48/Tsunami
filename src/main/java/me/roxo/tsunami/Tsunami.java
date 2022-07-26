@@ -243,7 +243,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
 //        List<Location> locations10 = getLocationBezier();
 //        List<Location> locations11= getLocationBezier();
 //        List<Location> locations12 = getLocationBezier();
-
+//initial
 
         Location finalLocationOfPlayer = player.getLocation();
         BukkitRunnable br = new BukkitRunnable() {
@@ -255,7 +255,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
 
 
                 Location point = locations1.get(a);
-                TempBlock tempBlock = new TempBlock(point.getBlock(), Material.LAVA);
+                TempBlock tempBlock = new TempBlock(point.getBlock(), Material.WATER);
                 tempBlock.setRevertTime(5000);
 
 //                Location point2 = locations2.get(a);
