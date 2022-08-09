@@ -41,7 +41,7 @@ public class Freeze extends BukkitRunnable {
             cancel();
             return;
         }
-        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENT, 1,1);
+        player.playSound(player.getLocation(), Sound.ENTITY_BOAT_PADDLE_WATER, 1,1);
 
         tick++;
 

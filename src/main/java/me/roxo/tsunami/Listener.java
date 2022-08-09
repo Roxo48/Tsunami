@@ -2,6 +2,7 @@ package me.roxo.tsunami;
 
 import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.ability.CoreAbility;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
@@ -12,13 +13,14 @@ public class Listener implements org.bukkit.event.Listener {
 
     @EventHandler
     public void onSneak(PlayerToggleSneakEvent event){
+
         Player player = event.getPlayer();
 
-        if(!event.isSneaking())return;
 
         Tsunami eruption = CoreAbility.getAbility(player, Tsunami.class);
 
         if (eruption != null) {
+            Bukkit.getServer().broadcastMessage("sneak");
             eruption.onShift();
         }
     }
@@ -36,7 +38,8 @@ public class Listener implements org.bukkit.event.Listener {
         if (bendingPlayer == null) {
             return;
         }
-        if (bendingPlayer.getBoundAbilityName().equalsIgnoreCase("Eruption")) {
+        if (bendingPlayer.getBoundAbilityName().equalsIgnoreCase("Tsunami")) {
+            Bukkit.getServer().broadcastMessage("click");
             new Tsunami(player);
         }
 

@@ -8,6 +8,7 @@ import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TempBlock;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,7 +17,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.Permission;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     private static long COOLDOWN;
 
     private static long SPEED;
+    private List<Location> locations1 = new ArrayList<>();
 
     private static int TIME;
 
@@ -75,7 +76,13 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             remove();
             return;
         }
+        freeze = new Freeze(this, player, 3000);
+        tempBlocks = new ArrayList<>();
+        location = player.getLocation();
         comapss = 0;
+        sourceBlock = GeneralMethods.getTargetedLocation(player, 10).getBlock();
+        state = State.SOURCE;
+
         count = 0;
         a = 0;
         setFields();
@@ -90,11 +97,11 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     }
 
     private void setFields() {
-        SOURCE_RANGE = ConfigManager.getConfig().getDouble("Eruption.SOURCE_RANGE");
-        RANGE = ConfigManager.getConfig().getDouble("Eruption.RANGE");
-        TIME = ConfigManager.getConfig().getInt("Eruption.TIME");
-        COOLDOWN = ConfigManager.getConfig().getLong("Eruption.COOLDOWN");
-        SPEED = ConfigManager.getConfig().getLong("Eruption.SPEED");
+        SOURCE_RANGE = ConfigManager.getConfig().getDouble("Tsunami.SOURCE_RANGE");
+        RANGE = ConfigManager.getConfig().getDouble("Tsunami.RANGE");
+        TIME = ConfigManager.getConfig().getInt("Tsunami.TIME");
+        COOLDOWN = ConfigManager.getConfig().getLong("Tsunami.COOLDOWN");
+        SPEED = ConfigManager.getConfig().getLong("Tsunami.SPEED");
     }
 
     public void effect(final Location loc) {
@@ -107,7 +114,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             this.remove();
             return;
         }
-        if (!Objects.equals(bPlayer.getBoundAbilityName(), "Eruption")) {
+        if (!Objects.equals(bPlayer.getBoundAbilityName(), "Tsunami")) {
             this.bPlayer.addCooldown(this);
             remove();
             return;
@@ -123,14 +130,16 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             case SOURCE:
 
                 progressSource();
+                Bukkit.getServer().broadcastMessage("source");
                 break;
 
             case BUILDWATER:
+
                progressBuild();
                 break;
 
             case DONE:
-
+                Bukkit.getServer().broadcastMessage("Done");
                 if (count == 0) {
                     player.sendMessage(ChatColor.RED + " You feel the molten rock heating up awaiting to rise and erupt...");
                     freeze.runTaskTimer(this.getElement().getPlugin(), 0, 20);
@@ -145,41 +154,78 @@ public class Tsunami extends WaterAbility implements AddonAbility {
 
     private void progressBuild() {
         player.getEyeLocation().getYaw();
+        Bukkit.getServer().broadcastMessage("Build");
 
+//        if(rpGetPlayerDirection(player) == 1){//west 0
+//            comapss=1;
+//            blockLocOne = location.clone().add(8,0,0);
+//            for(int i = -6; i < 6; i++){
+//                Location location1 =  location.clone().add(8,0,i);
+//                locations.add(location1);
+//            }
+//        }else if(rpGetPlayerDirection(player) == 2){//north 1
+//            comapss = 2;
+//            blockLocOne = location.clone().add(0,0,8);
+//            for(int i = -6; i < 6; i++){
+//                Location location1 =  location.clone().add(i,0,8);
+//                locations.add(location1);
+//            }
+//        }else if (rpGetPlayerDirection(player) == 3){//east 2
+//            comapss = 3;
+//            blockLocOne = location.clone().add(-8,0,0);
+//            for(int i = -6; i < 6; i++){
+//                Location location1 =  location.clone().add(-8,0,i);
+//                locations.add(location1);
+//            }
+//        }else if(rpGetPlayerDirection(player) == 0){//south 3
+//            comapss = 4;
+          //  blockLocOne = location.clone().add(0,0,-8);
+//            for(int i = -6; i < 6; i++){
+//                Location location1 =  location.clone().add(i,0,-8);
+//                locations.add(location1);
+//            }
+//        }
+
+        locations.add(blockLocOne);
         if(rpGetPlayerDirection(player) == 1){//west 0
-            comapss=1;
-            blockLocOne = location.clone().add(8,0,0);
+
             for(int i = -6; i < 6; i++){
-                Location location1 =  location.clone().add(8,0,i);
-                locations.add(location1);
+                blockLocOne = location.clone().add(8,0,i);
+                blockLocTwo = location.clone().add(5,10,i);
+                blockLocThree = location.clone().add(3,5,i);
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
             }
+
         }else if(rpGetPlayerDirection(player) == 2){//north 1
-            comapss = 2;
-            blockLocOne = location.clone().add(0,0,8);
+
             for(int i = -6; i < 6; i++){
-                Location location1 =  location.clone().add(i,0,8);
-                locations.add(location1);
+                blockLocOne = location.clone().add(i,0,8);
+                blockLocTwo = location.clone().add(i,10,5);
+                blockLocThree = location.clone().add(i,5,3);
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
             }
+
         }else if (rpGetPlayerDirection(player) == 3){//east 2
-            comapss = 3;
-            blockLocOne = location.clone().add(-8,0,0);
+
+
             for(int i = -6; i < 6; i++){
-                Location location1 =  location.clone().add(-8,0,i);
-                locations.add(location1);
+                blockLocOne = location.clone().add(-8,0,i);
+                blockLocTwo = location.clone().add(-5,10,i);
+                blockLocThree = location.clone().add(-3,5,i);
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
             }
+
         }else if(rpGetPlayerDirection(player) == 0){//south 3
-            comapss = 4;
-            blockLocOne = location.clone().add(0,0,-8);
             for(int i = -6; i < 6; i++){
-                Location location1 =  location.clone().add(i,0,-8);
-                locations.add(location1);
+                blockLocOne = location.clone().add(i,0,-8);
+                blockLocTwo = location.clone().add(i,10,-5);
+                blockLocThree = location.clone().add(i,5,-3);
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
             }
         }
-        locations.add(blockLocOne);
-
         //List<Block> blockListOne = new ArrayList<>(getBlocksOFVolcano(blockLocOne));
         List<Block> blockList = new ArrayList<>();
-        for(Location location1 : locations){
+        for(Location location1 : locations1){
             blockList.add(location1.getBlock());
         }
         playWaterbendingSound(player.getLocation());
@@ -197,8 +243,9 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             }
             TempBlock tempBlock = new TempBlock(blockonvoc, Material.BROWN_CONCRETE);
             tempBlocks.add(tempBlock);
-            tempBlock.setRevertTime(10000);
+            tempBlock.setRevertTime(15000);
         }
+        state = State.DONE;
     }
 
 
@@ -209,70 +256,100 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     }
 
     public void progressShoot() {
-       // Location locationOfPlayer = GeneralMethods.getTargetedLocation(player, 20);
-        if(rpGetPlayerDirection(player) == 1){//west 0
-            blockLocOne = location.clone().add(8,0,0);
-            blockLocTwo = location.clone().add(5,10,0);
-            blockLocThree = location.clone().add(3,5,0);
+//       // Location locationOfPlayer = GeneralMethods.getTargetedLocation(player, 20);
+//        if(rpGetPlayerDirection(player) == 1){//west 0
+//            blockLocOne = location.clone().add(8,0,0);
+//            blockLocTwo = location.clone().add(5,10,0);
+//            blockLocThree = location.clone().add(3,5,0);
+//
+//        }else if(rpGetPlayerDirection(player) == 2){//north 1
+//            blockLocOne = location.clone().add(0,0,8);
+//            blockLocTwo = location.clone().add(0,10,5);
+//            blockLocThree = location.clone().add(0,5,3);
+//
+//        }else if (rpGetPlayerDirection(player) == 3){//east 2
+//
+//            blockLocOne = location.clone().add(-8,0,0);
+//            blockLocTwo = location.clone().add(-5,10,0);
+//            blockLocThree = location.clone().add(-3,5,0);
+//
+//        }else if(rpGetPlayerDirection(player) == 0){//south 3
+//            blockLocOne = location.clone().add(0,0,-8);
+//            blockLocTwo = location.clone().add(0,10,-5);
+//            blockLocThree = location.clone().add(0,5,-3);
+//        }
+//        List<Location> locations1 = getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100);
+////        List<Location> locations2 = getLocationBezier();
+////        List<Location> locations3 = getLocationBezier();
+////        List<Location> locations4 = getLocationBezier();
+////        List<Location> locations5 = getLocationBezier();
+////        List<Location> locations6 = getLocationBezier();
+////        List<Location> locations7 = getLocationBezier();
+////        List<Location> locations8 = getLocationBezier();
+////        List<Location> locations9 = getLocationBezier();
+////        List<Location> locations10 = getLocationBezier();
+////        List<Location> locations11= getLocationBezier();
+////        List<Location> locations12 = getLocationBezier();
+////initial
 
-        }else if(rpGetPlayerDirection(player) == 2){//north 1
-            blockLocOne = location.clone().add(0,0,8);
-            blockLocTwo = location.clone().add(0,10,5);
-            blockLocThree = location.clone().add(0,5,3);
-
-        }else if (rpGetPlayerDirection(player) == 3){//east 2
-
-            blockLocOne = location.clone().add(-8,0,0);
-            blockLocTwo = location.clone().add(-5,10,0);
-            blockLocThree = location.clone().add(-3,5,0);
-
-        }else if(rpGetPlayerDirection(player) == 0){//south 3
-            blockLocOne = location.clone().add(0,0,-8);
-            blockLocTwo = location.clone().add(0,10,-5);
-            blockLocThree = location.clone().add(0,5,-3);
-        }
-        List<Location> locations1 = getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100);
-//        List<Location> locations2 = getLocationBezier();
-//        List<Location> locations3 = getLocationBezier();
-//        List<Location> locations4 = getLocationBezier();
-//        List<Location> locations5 = getLocationBezier();
-//        List<Location> locations6 = getLocationBezier();
-//        List<Location> locations7 = getLocationBezier();
-//        List<Location> locations8 = getLocationBezier();
-//        List<Location> locations9 = getLocationBezier();
-//        List<Location> locations10 = getLocationBezier();
-//        List<Location> locations11= getLocationBezier();
-//        List<Location> locations12 = getLocationBezier();
-//initial
-
-        Location finalLocationOfPlayer = player.getLocation();
         BukkitRunnable br = new BukkitRunnable() {
             @Override
             public void run() {
-                if(a >= 100){
+                if(a >= 15){
                     cancel();
                 }
-
-
-                Location point = locations1.get(a);
-                TempBlock tempBlock = new TempBlock(point.getBlock(), Material.WATER);
-                tempBlock.setRevertTime(5000);
-
-//                Location point2 = locations2.get(a);
-//                TempBlock tempBlock2 = new TempBlock(point2.getBlock(), Material.LAVA);
-//                tempBlock2.setRevertTime(5000);
-//
-//                Location point3 = locations3.get(a);
-//                TempBlock tempBlock3 = new TempBlock(point3.getBlock(), Material.LAVA);
-//                tempBlock3.setRevertTime(5000);
+                if(rpGetPlayerDirection(player) == 1){//west 0
+                    //x
+                        for(Location location1 : locations1){
+                            location1.clone().add(a,0,0);
+                        }
+                }else if(rpGetPlayerDirection(player) == 2){//north 1
+                    //z
+                    for(Location location1 : locations1){
+                        location1.clone().add(0,0,a);
+                    }
+                }else if (rpGetPlayerDirection(player) == 3){//east 2
+                    //-x
+                    for(Location location1 : locations1){
+                        location1.clone().add(-a,0,0);
+                    }
+                }else if(rpGetPlayerDirection(player) == 0){//south 3
+                    //-z
+                    for(Location location1 : locations1){
+                        location1.clone().add(0,0,-a);
+                    }
+                }
+                tempBlocks.clear();
+                List<Block> blockList = new ArrayList<>();
+                for(Location location1 : locations1){
+                    blockList.add(location1.getBlock());
+                }
+                playWaterbendingSound(player.getLocation());
+                for (int i = tempBlocks.size(); i < blockList.size(); i++) {
+                    Block blockonvoc = blockList.get(i);
+                    if (GeneralMethods.isSolid(blockonvoc)) {
+                        if (TempBlock.isTempBlock(blockonvoc)) {
+                            TempBlock tb = TempBlock.get(blockonvoc);
+                            if (!tempBlocks.contains(tb)) {
+                                state = State.NULL;
+                                return;
+                            }
+                        } else if (blockonvoc != sourceBlock) {
+                        }
+                    }
+                    TempBlock tempBlock = new TempBlock(blockonvoc, Material.BLACK_GLAZED_TERRACOTTA);
+                    tempBlocks.add(tempBlock);
+                    tempBlock.setRevertTime(2000);
+                }
                 a++;
             }
         };
+        br.runTaskTimer(ProjectKorra.plugin, 20* 60, 0);
 
     }
 
-
     private void progressSource() {
+        Bukkit.getServer().broadcastMessage("source");
         effect(sourceBlock.getLocation());
         Location location1 = sourceBlock.getLocation();
         for(int i = -1; i < 1; i++){
