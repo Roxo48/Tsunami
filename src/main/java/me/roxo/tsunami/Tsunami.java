@@ -402,7 +402,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         //perm.setDefault(PermissionDefault.OP);
         final FileConfiguration config = ConfigManager.defaultConfig.get();
         config.addDefault("Tsunami.SOURCE_RANGE",(Object) 8);
-        config.addDefault("Tsunami.RANGE",(Object) 30);
+        config.addDefault("Tsunami.RANGE",(Object) 25);
         config.addDefault("Tsunami.COOLDOWN",(Object) 12000);
         config.addDefault("Tsunami.SPEED", (Object) 5);
         ConfigManager.defaultConfig.save();
