@@ -20,7 +20,6 @@ public class Listener implements org.bukkit.event.Listener {
         Tsunami eruption = CoreAbility.getAbility(player, Tsunami.class);
 
         if (eruption != null) {
-            Bukkit.getServer().broadcastMessage("sneak");
             eruption.onShift();
         }
     }
@@ -39,7 +38,6 @@ public class Listener implements org.bukkit.event.Listener {
             return;
         }
         if (bendingPlayer.getBoundAbilityName().equalsIgnoreCase("Tsunami")) {
-            Bukkit.getServer().broadcastMessage("click");
             new Tsunami(player);
         }
 

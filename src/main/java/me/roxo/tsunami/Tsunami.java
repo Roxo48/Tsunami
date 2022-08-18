@@ -6,6 +6,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
+import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TempBlock;
 import org.bukkit.Bukkit;
@@ -14,6 +15,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.Permission;
@@ -22,6 +25,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Vector;
 
 public class Tsunami extends WaterAbility implements AddonAbility {
 
@@ -35,16 +39,15 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     private static long SPEED;
     private List<Location> locations1 = new ArrayList<>();
 
-    private static int TIME;
-
     private Block sourceBlock;
 
     private List<TempBlock> tempBlocks;
 
     private Freeze freeze;
-
     private int comapss;
     private Block block;
+
+    private Tsunami tsunami;
     private State state;
     private int count;
     private Location blockLocOne;
@@ -55,6 +58,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     private Permission perm;
     private Listener listener;
     private int a;
+    private int count1;
 
     public Tsunami(Player player) {
         super(player);
@@ -76,13 +80,14 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             remove();
             return;
         }
+        tsunami = this;
         freeze = new Freeze(this, player, 3000);
         tempBlocks = new ArrayList<>();
         location = player.getLocation();
         comapss = 0;
         sourceBlock = GeneralMethods.getTargetedLocation(player, 10).getBlock();
         state = State.SOURCE;
-
+        count1 = 0;
         count = 0;
         a = 0;
         setFields();
@@ -99,13 +104,12 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     private void setFields() {
         SOURCE_RANGE = ConfigManager.getConfig().getDouble("Tsunami.SOURCE_RANGE");
         RANGE = ConfigManager.getConfig().getDouble("Tsunami.RANGE");
-        TIME = ConfigManager.getConfig().getInt("Tsunami.TIME");
         COOLDOWN = ConfigManager.getConfig().getLong("Tsunami.COOLDOWN");
         SPEED = ConfigManager.getConfig().getLong("Tsunami.SPEED");
     }
 
     public void effect(final Location loc) {
-        ParticleEffect.ASH.display(loc, 35, 0, .4, 0);
+        ParticleEffect.ASH.display(loc, 50, .1, .4, .1);
     }
 
     @Override
@@ -130,19 +134,22 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             case SOURCE:
 
                 progressSource();
-                Bukkit.getServer().broadcastMessage("source");
                 break;
 
             case BUILDWATER:
+                if (count1 == 0) {
+                    player.sendMessage(ChatColor.DARK_AQUA + " Splash...");
+                    progressBuild();
+                }
 
-               progressBuild();
+                    count1++;
+
                 break;
 
             case DONE:
-                Bukkit.getServer().broadcastMessage("Done");
+
                 if (count == 0) {
-                    player.sendMessage(ChatColor.RED + " You feel the molten rock heating up awaiting to rise and erupt...");
-                    freeze.runTaskTimer(this.getElement().getPlugin(), 0, 20);
+                    progressShoot();
 
                 count++;
                 break;
@@ -154,37 +161,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
 
     private void progressBuild() {
         player.getEyeLocation().getYaw();
-        Bukkit.getServer().broadcastMessage("Build");
-
-//        if(rpGetPlayerDirection(player) == 1){//west 0
-//            comapss=1;
-//            blockLocOne = location.clone().add(8,0,0);
-//            for(int i = -6; i < 6; i++){
-//                Location location1 =  location.clone().add(8,0,i);
-//                locations.add(location1);
-//            }
-//        }else if(rpGetPlayerDirection(player) == 2){//north 1
-//            comapss = 2;
-//            blockLocOne = location.clone().add(0,0,8);
-//            for(int i = -6; i < 6; i++){
-//                Location location1 =  location.clone().add(i,0,8);
-//                locations.add(location1);
-//            }
-//        }else if (rpGetPlayerDirection(player) == 3){//east 2
-//            comapss = 3;
-//            blockLocOne = location.clone().add(-8,0,0);
-//            for(int i = -6; i < 6; i++){
-//                Location location1 =  location.clone().add(-8,0,i);
-//                locations.add(location1);
-//            }
-//        }else if(rpGetPlayerDirection(player) == 0){//south 3
-//            comapss = 4;
-          //  blockLocOne = location.clone().add(0,0,-8);
-//            for(int i = -6; i < 6; i++){
-//                Location location1 =  location.clone().add(i,0,-8);
-//                locations.add(location1);
-//            }
-//        }
+//        Bukkit.getServer().broadcastMessage("Build");
 
         locations.add(blockLocOne);
         if(rpGetPlayerDirection(player) == 1){//west 0
@@ -193,7 +170,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                 blockLocOne = location.clone().add(8,0,i);
                 blockLocTwo = location.clone().add(5,10,i);
                 blockLocThree = location.clone().add(3,5,i);
-                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,60));
             }
 
         }else if(rpGetPlayerDirection(player) == 2){//north 1
@@ -202,7 +179,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                 blockLocOne = location.clone().add(i,0,8);
                 blockLocTwo = location.clone().add(i,10,5);
                 blockLocThree = location.clone().add(i,5,3);
-                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,60));
             }
 
         }else if (rpGetPlayerDirection(player) == 3){//east 2
@@ -212,7 +189,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                 blockLocOne = location.clone().add(-8,0,i);
                 blockLocTwo = location.clone().add(-5,10,i);
                 blockLocThree = location.clone().add(-3,5,i);
-                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,60));
             }
 
         }else if(rpGetPlayerDirection(player) == 0){//south 3
@@ -220,7 +197,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                 blockLocOne = location.clone().add(i,0,-8);
                 blockLocTwo = location.clone().add(i,10,-5);
                 blockLocThree = location.clone().add(i,5,-3);
-                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100));
+                locations1.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,60));
             }
         }
         //List<Block> blockListOne = new ArrayList<>(getBlocksOFVolcano(blockLocOne));
@@ -241,13 +218,12 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                 } else if (blockonvoc != sourceBlock) {
                 }
             }
-            TempBlock tempBlock = new TempBlock(blockonvoc, Material.BROWN_CONCRETE);
+            TempBlock tempBlock = new TempBlock(blockonvoc, Material.WATER);
             tempBlocks.add(tempBlock);
-            tempBlock.setRevertTime(15000);
+            tempBlock.setRevertTime(2000);
         }
         state = State.DONE;
     }
-
 
     public void onShift() {
         if(state == State.SOURCE){
@@ -256,100 +232,82 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     }
 
     public void progressShoot() {
-//       // Location locationOfPlayer = GeneralMethods.getTargetedLocation(player, 20);
-//        if(rpGetPlayerDirection(player) == 1){//west 0
-//            blockLocOne = location.clone().add(8,0,0);
-//            blockLocTwo = location.clone().add(5,10,0);
-//            blockLocThree = location.clone().add(3,5,0);
-//
-//        }else if(rpGetPlayerDirection(player) == 2){//north 1
-//            blockLocOne = location.clone().add(0,0,8);
-//            blockLocTwo = location.clone().add(0,10,5);
-//            blockLocThree = location.clone().add(0,5,3);
-//
-//        }else if (rpGetPlayerDirection(player) == 3){//east 2
-//
-//            blockLocOne = location.clone().add(-8,0,0);
-//            blockLocTwo = location.clone().add(-5,10,0);
-//            blockLocThree = location.clone().add(-3,5,0);
-//
-//        }else if(rpGetPlayerDirection(player) == 0){//south 3
-//            blockLocOne = location.clone().add(0,0,-8);
-//            blockLocTwo = location.clone().add(0,10,-5);
-//            blockLocThree = location.clone().add(0,5,-3);
-//        }
-//        List<Location> locations1 = getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,100);
-////        List<Location> locations2 = getLocationBezier();
-////        List<Location> locations3 = getLocationBezier();
-////        List<Location> locations4 = getLocationBezier();
-////        List<Location> locations5 = getLocationBezier();
-////        List<Location> locations6 = getLocationBezier();
-////        List<Location> locations7 = getLocationBezier();
-////        List<Location> locations8 = getLocationBezier();
-////        List<Location> locations9 = getLocationBezier();
-////        List<Location> locations10 = getLocationBezier();
-////        List<Location> locations11= getLocationBezier();
-////        List<Location> locations12 = getLocationBezier();
-////initial
-
         BukkitRunnable br = new BukkitRunnable() {
             @Override
             public void run() {
-                if(a >= 15){
+                List<Entity> entities = new ArrayList<>();
+                ArrayList<Location> locations2 = new ArrayList<>();
+                a++;
+                if (a >= RANGE) {
                     cancel();
+                    return;
                 }
                 if(rpGetPlayerDirection(player) == 1){//west 0
-                    //x
-                        for(Location location1 : locations1){
-                            location1.clone().add(a,0,0);
-                        }
+                    for(int i = -6; i < 6; i++){
+                        blockLocOne = location.clone().add(8  -a,0,i);
+                        blockLocTwo = location.clone().add(5 -a,10,i);
+                        blockLocThree = location.clone().add(3 -a,5,i);
+                        locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
+                    }
+                     entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(3 -a,5,0), 12);
                 }else if(rpGetPlayerDirection(player) == 2){//north 1
-                    //z
-                    for(Location location1 : locations1){
-                        location1.clone().add(0,0,a);
+                    for(int i = -6; i < 6; i++){
+                        blockLocOne = location.clone().add(i,0,8- a);
+                        blockLocTwo = location.clone().add(i,10,5- a);
+                        blockLocThree = location.clone().add(i,5,3- a);
+                        locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
+                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(0,5,3- a), 12);
                 }else if (rpGetPlayerDirection(player) == 3){//east 2
-                    //-x
-                    for(Location location1 : locations1){
-                        location1.clone().add(-a,0,0);
+                    for(int i = -6; i < 6; i++){
+                        blockLocOne = location.clone().add(-8+ a,0,i);
+                        blockLocTwo = location.clone().add(-5+ a,10,i);
+                        blockLocThree = location.clone().add(-3+ a,5,i);
+                        locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
+                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(-3+ a,5,0), 12);
                 }else if(rpGetPlayerDirection(player) == 0){//south 3
-                    //-z
-                    for(Location location1 : locations1){
-                        location1.clone().add(0,0,-a);
+                    for(int i = -6; i < 6; i++){
+                        blockLocOne = location.clone().add(i,0,-8+ a);
+                        blockLocTwo = location.clone().add(i,10,-5+ a);
+                        blockLocThree = location.clone().add(i,5,-3+ a);
+                        locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
+                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(0,5,-3+ a), 12);
                 }
-                tempBlocks.clear();
+                 tempBlocks = new ArrayList<>();
                 List<Block> blockList = new ArrayList<>();
-                for(Location location1 : locations1){
+                for(Location location1 : locations2){
                     blockList.add(location1.getBlock());
                 }
                 playWaterbendingSound(player.getLocation());
-                for (int i = tempBlocks.size(); i < blockList.size(); i++) {
-                    Block blockonvoc = blockList.get(i);
-                    if (GeneralMethods.isSolid(blockonvoc)) {
-                        if (TempBlock.isTempBlock(blockonvoc)) {
-                            TempBlock tb = TempBlock.get(blockonvoc);
-                            if (!tempBlocks.contains(tb)) {
-                                state = State.NULL;
-                                return;
-                            }
-                        } else if (blockonvoc != sourceBlock) {
-                        }
-                    }
-                    TempBlock tempBlock = new TempBlock(blockonvoc, Material.BLACK_GLAZED_TERRACOTTA);
+                for (Block block1 : blockList) {
+                    Block blockonvoc = block1;
+                    TempBlock tempBlock = new TempBlock(blockonvoc, Material.WATER);
                     tempBlocks.add(tempBlock);
-                    tempBlock.setRevertTime(2000);
+                    tempBlock.setRevertTime(SPEED * 50);
                 }
-                a++;
-            }
-        };
-        br.runTaskTimer(ProjectKorra.plugin, 20* 60, 0);
+                for (Entity target : entities) {
+                    if (target.getUniqueId() == player.getUniqueId()) {
+                        continue;
+                    }
+                    if (target instanceof LivingEntity) {
 
-    }
+                        DamageHandler.damageEntity(target, 3, tsunami);
+                        target.setFireTicks(0);
+                        target.setVelocity(target.getLocation().getDirection().multiply(-3));
+                    }
+                }
+            }
+
+        };
+            br.runTaskTimer(ProjectKorra.plugin, 0, SPEED);
+            bPlayer.addCooldown(this);
+            remove();
+
+        }
 
     private void progressSource() {
-        Bukkit.getServer().broadcastMessage("source");
         effect(sourceBlock.getLocation());
         Location location1 = sourceBlock.getLocation();
         for(int i = -1; i < 1; i++){
@@ -422,7 +380,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
 
     @Override
     public long getCooldown() {
-        return 1000;
+        return COOLDOWN;
     }
 
     @Override
@@ -444,10 +402,9 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         //perm.setDefault(PermissionDefault.OP);
         final FileConfiguration config = ConfigManager.defaultConfig.get();
         config.addDefault("Tsunami.SOURCE_RANGE",(Object) 8);
-        config.addDefault("Tsunami.RANGE",(Object) 15);
+        config.addDefault("Tsunami.RANGE",(Object) 25);
         config.addDefault("Tsunami.COOLDOWN",(Object) 12000);
-        config.addDefault("Tsunami.TIME", (Object) 5);
-        config.addDefault("Tsunami.SPEED", (Object) 4);
+        config.addDefault("Tsunami.SPEED", (Object) 5);
         ConfigManager.defaultConfig.save();
     }
 
