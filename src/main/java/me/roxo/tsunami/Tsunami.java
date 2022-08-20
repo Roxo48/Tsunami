@@ -34,7 +34,13 @@ public class Tsunami extends WaterAbility implements AddonAbility {
 
     private static double RANGE;
 
+    private static double KNOCKBACK;
+
+    private static double DAMAGE;
+
     private static long COOLDOWN;
+
+    private static long STAY;
 
     private static long SPEED;
     private List<Location> locations1 = new ArrayList<>();
@@ -106,10 +112,13 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         RANGE = ConfigManager.getConfig().getDouble("Tsunami.RANGE");
         COOLDOWN = ConfigManager.getConfig().getLong("Tsunami.COOLDOWN");
         SPEED = ConfigManager.getConfig().getLong("Tsunami.SPEED");
+        KNOCKBACK = ConfigManager.getConfig().getLong("Tsunami.KNOCKBACK");
+        DAMAGE = ConfigManager.getConfig().getLong("Tsunami.DAMAGE");
+        STAY = ConfigManager.getConfig().getLong("Tsunami.STAYWAVE");
     }
 
     public void effect(final Location loc) {
-        ParticleEffect.ASH.display(loc, 50, .1, .4, .1);
+        ParticleEffect.WATER_SPLASH.display(loc, 50, .1, .4, .1);
     }
 
     @Override
@@ -220,7 +229,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             }
             TempBlock tempBlock = new TempBlock(blockonvoc, Material.WATER);
             tempBlocks.add(tempBlock);
-            tempBlock.setRevertTime(2000);
+            tempBlock.setRevertTime(STAY);
         }
         state = State.DONE;
     }
@@ -288,14 +297,15 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                     tempBlock.setRevertTime(SPEED * 50);
                 }
                 for (Entity target : entities) {
-                    if (target.getUniqueId() == player.getUniqueId()) {
-                        continue;
-                    }
+//                    if (target.getUniqueId() == player.getUniqueId()) {
+//                        continue;
+//                    }
                     if (target instanceof LivingEntity) {
-
-                        DamageHandler.damageEntity(target, 3, tsunami);
+                        if (target.getUniqueId() != player.getUniqueId()) {
+                       DamageHandler.damageEntity(target, DAMAGE, tsunami);
+                    }
                         target.setFireTicks(0);
-                        target.setVelocity(target.getLocation().getDirection().multiply(-3));
+                        target.setVelocity(target.getLocation().getDirection().multiply(KNOCKBACK));
                     }
                 }
             }
@@ -312,6 +322,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         Location location1 = sourceBlock.getLocation();
         for(int i = -1; i < 1; i++){
             for(int j = -1; j < 1; j++){
+                effect(sourceBlock.getLocation());
                 Location location2 = location1.clone().add(i,0,j);
                 if(isWaterbendable(location2.getBlock() )|| isPlantbendable(location2.getBlock())){
                     remove();
@@ -405,6 +416,9 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         config.addDefault("Tsunami.RANGE",(Object) 25);
         config.addDefault("Tsunami.COOLDOWN",(Object) 12000);
         config.addDefault("Tsunami.SPEED", (Object) 5);
+        config.addDefault("Tsunami.KNOCKBACK", 2);
+        config.addDefault("Tsunami.DAMAGE", 3);
+        config.addDefault("Tsunami.STAYWAVE", 1000);
         ConfigManager.defaultConfig.save();
     }
 
