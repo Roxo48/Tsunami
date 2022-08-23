@@ -9,10 +9,7 @@ import com.projectkorra.projectkorra.configuration.ConfigManager;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TempBlock;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -21,11 +18,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.Permission;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Vector;
 
 public class Tsunami extends WaterAbility implements AddonAbility {
 
@@ -65,7 +63,8 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     private Listener listener;
     private int a;
     private int count1;
-
+    private int direction;
+    private Location getBlockLocOne;
     public Tsunami(Player player) {
         super(player);
         if (!bPlayer.canBend(this)) {
@@ -86,12 +85,14 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             remove();
             return;
         }
+        direction = 0;
         tsunami = this;
         freeze = new Freeze(this, player, 3000);
         tempBlocks = new ArrayList<>();
         location = player.getLocation();
         comapss = 0;
         sourceBlock = GeneralMethods.getTargetedLocation(player, 10).getBlock();
+        getBlockLocOne = GeneralMethods.getTargetedLocation(player,10);
         state = State.SOURCE;
         count1 = 0;
         count = 0;
@@ -229,7 +230,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
             }
             TempBlock tempBlock = new TempBlock(blockonvoc, Material.WATER);
             tempBlocks.add(tempBlock);
-            tempBlock.setRevertTime(STAY);
+            tempBlock.setRevertTime(STAY / 2);
         }
         state = State.DONE;
     }
@@ -241,47 +242,63 @@ public class Tsunami extends WaterAbility implements AddonAbility {
     }
 
     public void progressShoot() {
+        if(rpGetPlayerDirection(player) == 1){//west 0
+            direction = 1;
+        }else if(rpGetPlayerDirection(player) == 2){//north 1
+            direction = 2;
+        }else if (rpGetPlayerDirection(player) == 3){//east 2
+            direction = 3;
+        }else if(rpGetPlayerDirection(player) == 0){//south 3
+            direction = 4;
+        }
         BukkitRunnable br = new BukkitRunnable() {
             @Override
             public void run() {
-                List<Entity> entities = new ArrayList<>();
-                ArrayList<Location> locations2 = new ArrayList<>();
+
                 a++;
                 if (a >= RANGE) {
                     cancel();
                     return;
                 }
-                if(rpGetPlayerDirection(player) == 1){//west 0
+                ArrayList<Location> locations2 = new ArrayList<>();
+
+                if(direction == 1){//west 0
                     for(int i = -6; i < 6; i++){
                         blockLocOne = location.clone().add(8  -a,0,i);
                         blockLocTwo = location.clone().add(5 -a,10,i);
                         blockLocThree = location.clone().add(3 -a,5,i);
                         locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
-                     entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(3 -a,5,0), 12);
-                }else if(rpGetPlayerDirection(player) == 2){//north 1
+                }else if(direction == 2){//north 1
                     for(int i = -6; i < 6; i++){
                         blockLocOne = location.clone().add(i,0,8- a);
                         blockLocTwo = location.clone().add(i,10,5- a);
                         blockLocThree = location.clone().add(i,5,3- a);
                         locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
-                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(0,5,3- a), 12);
-                }else if (rpGetPlayerDirection(player) == 3){//east 2
+                }else if (direction == 3){//east 2
                     for(int i = -6; i < 6; i++){
                         blockLocOne = location.clone().add(-8+ a,0,i);
                         blockLocTwo = location.clone().add(-5+ a,10,i);
                         blockLocThree = location.clone().add(-3+ a,5,i);
                         locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
-                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(-3+ a,5,0), 12);
-                }else if(rpGetPlayerDirection(player) == 0){//south 3
+                }else if(direction == 4){//south 3
                     for(int i = -6; i < 6; i++){
                         blockLocOne = location.clone().add(i,0,-8+ a);
                         blockLocTwo = location.clone().add(i,10,-5+ a);
                         blockLocThree = location.clone().add(i,5,-3+ a);
                         locations2.addAll(getLocationBezier(blockLocOne, blockLocTwo ,blockLocThree,50));
                     }
+                }
+                List<Entity> entities = new ArrayList<>();
+                if(rpGetPlayerDirection(player) == 1){//west 0
+                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(3 -a,5,0), 12);
+                }else if(rpGetPlayerDirection(player) == 2){//north 1
+                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(0,5,3- a), 12);
+                }else if (rpGetPlayerDirection(player) == 3){//east 2
+                    entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(-3+ a,5,0), 12);
+                }else if(rpGetPlayerDirection(player) == 0){//south 3
                     entities = GeneralMethods.getEntitiesAroundPoint(location.clone().add(0,5,-3+ a), 12);
                 }
                  tempBlocks = new ArrayList<>();
@@ -294,7 +311,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
                     Block blockonvoc = block1;
                     TempBlock tempBlock = new TempBlock(blockonvoc, Material.WATER);
                     tempBlocks.add(tempBlock);
-                    tempBlock.setRevertTime(SPEED * 50);
+                    tempBlock.setRevertTime(STAY);
                 }
                 for (Entity target : entities) {
 //                    if (target.getUniqueId() == player.getUniqueId()) {
@@ -318,11 +335,11 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         }
 
     private void progressSource() {
-        effect(sourceBlock.getLocation());
+        effect(getBlockLocOne);
         Location location1 = sourceBlock.getLocation();
         for(int i = -1; i < 1; i++){
             for(int j = -1; j < 1; j++){
-                effect(sourceBlock.getLocation());
+                effect(getBlockLocOne);
                 Location location2 = location1.clone().add(i,0,j);
                 if(isWaterbendable(location2.getBlock() )|| isPlantbendable(location2.getBlock())){
                     remove();
@@ -348,6 +365,7 @@ public class Tsunami extends WaterAbility implements AddonAbility {
         // pFinal[1] = Math.pow(1 - t, 2) * p0[1] + (1-t) * 2 * t * p1[1] + t * t * p2[1];
         return p0.clone().multiply((1-t)*(1-t)).add(p1.clone().multiply((1-t) * 2 * t)).add(p2.clone().multiply(t*t));
     }
+
 
     public int rpGetPlayerDirection(Player playerSelf){
         int dir = 0;
